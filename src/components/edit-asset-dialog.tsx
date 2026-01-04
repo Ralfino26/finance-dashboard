@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { assetStore } from "@/lib/store"
 import { Asset, VaultType } from "@/types/vault"
+import { CryptoSearch } from "@/components/crypto-search"
 
 interface EditAssetDialogProps {
   vaultType: VaultType
@@ -25,47 +26,86 @@ export function EditAssetDialog({ vaultType }: EditAssetDialogProps) {
   const [name, setName] = useState("")
   const [amount, setAmount] = useState("")
   const [valueInEur, setValueInEur] = useState("")
+  const [symbol, setSymbol] = useState("")
   const [loadingPrice, setLoadingPrice] = useState(false)
+  const [cryptoName, setCryptoName] = useState<string | null>(null)
 
   // Extract symbol from asset name for crypto
   const getSymbolFromName = (name: string): string | null => {
-    const upperName = name.toUpperCase()
-    const symbols = ["BTC", "ETH", "BNB", "SOL", "ADA", "XRP", "DOT", "DOGE", "MATIC", "AVAX", "ATOM", "LTC", "UNI", "LINK", "ALGO", "VET", "THETA", "FIL", "TRX", "ETC", "XLM", "XMR", "AAVE", "MKR", "COMP", "YFI", "SNX", "SUSHI", "CRV"]
-    for (const symbol of symbols) {
-      if (upperName.includes(symbol)) return symbol
+    // Try to extract symbol from name like "Bitcoin (BTC)" or "BTC"
+    const match = name.match(/\(([A-Z0-9]+)\)/i)
+    if (match) return match[1].toUpperCase()
+    
+    // Check if name itself is a symbol (3-5 uppercase letters)
+    const upperName = name.toUpperCase().trim()
+    if (/^[A-Z0-9]{2,10}$/.test(upperName)) {
+      return upperName
     }
-    if (symbols.includes(upperName)) return upperName
+    
     return null
   }
 
-  // Auto-update price for crypto when amount changes
+  // Auto-update name and price for crypto when symbol changes
   useEffect(() => {
-    if (vaultType === "crypto" && asset && amount) {
-      const symbol = getSymbolFromName(asset.name)
-      if (symbol) {
-        const fetchPrice = async () => {
-          setLoadingPrice(true)
-          try {
-            const response = await fetch(`/api/crypto/price?symbol=${symbol}`)
-            if (response.ok) {
-              const data = await response.json()
-              if (data.price) {
+    if (vaultType === "crypto" && symbol && symbol !== getSymbolFromName(asset?.name || "")) {
+      const fetchCryptoInfo = async () => {
+        setLoadingPrice(true)
+        try {
+          const response = await fetch(`/api/crypto/price?symbol=${symbol.toUpperCase()}&info=true`)
+          if (response.ok) {
+            const data = await response.json()
+            if (data.name && data.price) {
+              setCryptoName(data.name)
+              setName(data.name)
+              // Calculate value if amount is also entered
+              if (amount) {
                 const calculatedValue = parseFloat(amount) * data.price
                 setValueInEur(calculatedValue.toFixed(2))
               }
+            } else {
+              setCryptoName(null)
             }
-          } catch (error) {
-            console.error("Failed to fetch price:", error)
-          } finally {
-            setLoadingPrice(false)
+          } else {
+            setCryptoName(null)
           }
+        } catch (error) {
+          console.error("Failed to fetch crypto info:", error)
+          setCryptoName(null)
+        } finally {
+          setLoadingPrice(false)
         }
-
-        const timeoutId = setTimeout(fetchPrice, 500)
-        return () => clearTimeout(timeoutId)
       }
+
+      const timeoutId = setTimeout(fetchCryptoInfo, 500)
+      return () => clearTimeout(timeoutId)
     }
-  }, [amount, vaultType, asset])
+  }, [symbol, vaultType, asset])
+
+  // Auto-update price for crypto when amount changes
+  useEffect(() => {
+    if (vaultType === "crypto" && symbol && amount && cryptoName) {
+      const fetchPrice = async () => {
+        setLoadingPrice(true)
+        try {
+          const response = await fetch(`/api/crypto/price?symbol=${symbol.toUpperCase()}`)
+          if (response.ok) {
+            const data = await response.json()
+            if (data.price) {
+              const calculatedValue = parseFloat(amount) * data.price
+              setValueInEur(calculatedValue.toFixed(2))
+            }
+          }
+        } catch (error) {
+          console.error("Failed to fetch price:", error)
+        } finally {
+          setLoadingPrice(false)
+        }
+      }
+
+      const timeoutId = setTimeout(fetchPrice, 300)
+      return () => clearTimeout(timeoutId)
+    }
+  }, [amount, symbol, vaultType, cryptoName])
 
   useEffect(() => {
     const handleOpen = (e: CustomEvent) => {
@@ -75,6 +115,15 @@ export function EditAssetDialog({ vaultType }: EditAssetDialogProps) {
         setName(assetData.name)
         setAmount(assetData.amount.toString())
         setValueInEur(assetData.valueInEur.toString())
+        // Extract symbol from name for crypto
+        if (vaultType === "crypto") {
+          const extractedSymbol = getSymbolFromName(assetData.name)
+          setSymbol(extractedSymbol || "")
+          setCryptoName(extractedSymbol ? assetData.name : null)
+        } else {
+          setSymbol("")
+          setCryptoName(null)
+        }
         setOpen(true)
       }
     }
@@ -84,7 +133,13 @@ export function EditAssetDialog({ vaultType }: EditAssetDialogProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!asset || !name.trim() || !amount || !valueInEur) return
+    if (!asset) return
+    // For crypto, we need symbol and amount, name and value are auto-filled
+    if (vaultType === "crypto") {
+      if (!symbol || !amount || !cryptoName) return
+    } else {
+      if (!name.trim() || !amount || !valueInEur) return
+    }
 
     try {
       await assetStore.update(asset.id, {
@@ -133,15 +188,57 @@ export function EditAssetDialog({ vaultType }: EditAssetDialogProps) {
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="edit-name">Name</Label>
-              <Input
-                id="edit-name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-              />
-            </div>
+            {vaultType === "crypto" ? (
+              <>
+                <CryptoSearch
+                  value={symbol}
+                  onChange={(newSymbol) => {
+                    setSymbol(newSymbol)
+                    if (!newSymbol) {
+                      setName("")
+                      setCryptoName(null)
+                    }
+                  }}
+                  onSelect={(option) => {
+                    setSymbol(option.symbol)
+                    setName(option.name)
+                    setCryptoName(option.name)
+                    // Fetch price immediately
+                    if (amount) {
+                      fetch(`/api/crypto/price?symbol=${option.symbol}`)
+                        .then((res) => res.json())
+                        .then((data) => {
+                          if (data.price && amount) {
+                            const calculatedValue = parseFloat(amount) * data.price
+                            setValueInEur(calculatedValue.toFixed(2))
+                          }
+                        })
+                        .catch(console.error)
+                    }
+                  }}
+                />
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-name">Name (auto-filled)</Label>
+                  <Input
+                    id="edit-name"
+                    value={name}
+                    disabled
+                    className="bg-muted"
+                    placeholder="Will be auto-filled from search"
+                  />
+                </div>
+              </>
+            ) : (
+              <div className="grid gap-2">
+                <Label htmlFor="edit-name">Name</Label>
+                <Input
+                  id="edit-name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                />
+              </div>
+            )}
             <div className="grid gap-2">
               <Label htmlFor="edit-amount">Amount</Label>
               <Input
@@ -157,7 +254,7 @@ export function EditAssetDialog({ vaultType }: EditAssetDialogProps) {
               <Label htmlFor="edit-valueInEur">
                 Value in €
                 {vaultType === "crypto" && loadingPrice && (
-                  <span className="ml-2 text-xs text-muted-foreground">(Updating price...)</span>
+                  <span className="ml-2 text-xs text-muted-foreground">(Calculating...)</span>
                 )}
               </Label>
               <Input
@@ -166,13 +263,14 @@ export function EditAssetDialog({ vaultType }: EditAssetDialogProps) {
                 step="any"
                 value={valueInEur}
                 onChange={(e) => setValueInEur(e.target.value)}
-                placeholder={vaultType === "crypto" ? "Auto-calculated from price" : "0.00"}
+                placeholder={vaultType === "crypto" ? "Auto-calculated" : "0.00"}
                 required
-                disabled={vaultType === "crypto" && loadingPrice}
+                disabled={vaultType === "crypto"}
+                className={vaultType === "crypto" ? "bg-muted" : ""}
               />
-              {vaultType === "crypto" && asset && getSymbolFromName(asset.name) && (
+              {vaultType === "crypto" && (
                 <p className="text-xs text-muted-foreground">
-                  Value auto-updates based on current market price
+                  Value is automatically calculated from current market price
                 </p>
               )}
             </div>

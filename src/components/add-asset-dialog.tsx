@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { assetStore } from "@/lib/store"
 import { VaultType } from "@/types/vault"
+import { CryptoSearch } from "@/components/crypto-search"
 
 interface AddAssetDialogProps {
   vaultId: string
@@ -28,6 +29,7 @@ export function AddAssetDialog({ vaultId, vaultType }: AddAssetDialogProps) {
   const [symbol, setSymbol] = useState("")
   const [currency, setCurrency] = useState("EUR")
   const [loadingPrice, setLoadingPrice] = useState(false)
+  const [cryptoName, setCryptoName] = useState<string | null>(null)
 
   useEffect(() => {
     const handleOpen = (e: CustomEvent) => {
@@ -39,36 +41,57 @@ export function AddAssetDialog({ vaultId, vaultType }: AddAssetDialogProps) {
     return () => window.removeEventListener("open-asset-dialog", handleOpen as EventListener)
   }, [vaultId])
 
-  // Auto-fetch price for crypto when symbol and amount are entered
+  // Auto-calculate value when amount changes (for crypto)
   useEffect(() => {
-    if (vaultType === "crypto" && symbol && amount) {
+    if (vaultType === "crypto" && symbol && amount && parseFloat(amount) > 0) {
       const fetchPrice = async () => {
         setLoadingPrice(true)
         try {
-          const response = await fetch(`/api/crypto/price?symbol=${symbol.toUpperCase()}`)
+          const response = await fetch(`/api/crypto/price?symbol=${symbol.toUpperCase()}&info=true`)
           if (response.ok) {
             const data = await response.json()
-            if (data.price) {
+            console.log("Price API response:", data)
+            if (data.price && data.price > 0) {
               const calculatedValue = parseFloat(amount) * data.price
               setValueInEur(calculatedValue.toFixed(2))
+              // Also update name if we got it from the API
+              if (data.name && !cryptoName) {
+                setName(data.name)
+                setCryptoName(data.name)
+              }
+            } else {
+              console.warn("No valid price returned:", data)
+              setValueInEur("")
             }
+          } else {
+            const errorData = await response.json().catch(() => ({}))
+            console.error("Price API error:", response.status, errorData)
+            setValueInEur("")
           }
         } catch (error) {
           console.error("Failed to fetch price:", error)
+          setValueInEur("")
         } finally {
           setLoadingPrice(false)
         }
       }
 
-      // Debounce the API call
-      const timeoutId = setTimeout(fetchPrice, 500)
+      const timeoutId = setTimeout(fetchPrice, 300)
       return () => clearTimeout(timeoutId)
+    } else if (vaultType === "crypto" && (!symbol || !amount || parseFloat(amount) <= 0)) {
+      // Reset value if symbol or amount is cleared
+      setValueInEur("")
     }
-  }, [symbol, amount, vaultType])
+  }, [amount, symbol, vaultType, cryptoName])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!name.trim() || !amount || !valueInEur) return
+    // For crypto, we need symbol and amount, name and value are auto-filled
+    if (vaultType === "crypto") {
+      if (!symbol || !amount || !cryptoName) return
+    } else {
+      if (!name.trim() || !amount || !valueInEur) return
+    }
 
     try {
       await assetStore.create({
@@ -83,6 +106,7 @@ export function AddAssetDialog({ vaultId, vaultType }: AddAssetDialogProps) {
       setValueInEur("")
       setSymbol("")
       setCurrency("EUR")
+      setCryptoName(null)
       setOpen(false)
       // Dispatch event to update components
       window.dispatchEvent(new CustomEvent("asset-updated"))
@@ -103,26 +127,78 @@ export function AddAssetDialog({ vaultId, vaultType }: AddAssetDialogProps) {
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="name">Name</Label>
-              <Input
-                id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder={vaultType === "crypto" ? "e.g., Bitcoin" : vaultType === "investment" ? "e.g., Apple Inc." : "e.g., Savings Account"}
-                required
-              />
-            </div>
-            {(vaultType === "crypto" || vaultType === "investment") && (
-              <div className="grid gap-2">
-                <Label htmlFor="symbol">Symbol</Label>
-                <Input
-                  id="symbol"
+            {vaultType === "crypto" ? (
+              <>
+                <CryptoSearch
                   value={symbol}
-                  onChange={(e) => setSymbol(e.target.value)}
-                  placeholder={vaultType === "crypto" ? "e.g., BTC" : "e.g., AAPL"}
+                  onChange={(newSymbol) => {
+                    setSymbol(newSymbol)
+                    if (!newSymbol) {
+                      setName("")
+                      setCryptoName(null)
+                    }
+                  }}
+                  onSelect={(option) => {
+                    setSymbol(option.symbol)
+                    setName(option.name)
+                    setCryptoName(option.name)
+                    // Fetch price immediately if amount is already entered
+                    if (amount && parseFloat(amount) > 0) {
+                      setLoadingPrice(true)
+                      fetch(`/api/crypto/price?symbol=${option.symbol}&info=true`)
+                        .then((res) => res.json())
+                        .then((data) => {
+                          console.log("Price on select:", data)
+                          if (data.price && data.price > 0 && amount) {
+                            const calculatedValue = parseFloat(amount) * data.price
+                            setValueInEur(calculatedValue.toFixed(2))
+                          } else {
+                            setValueInEur("")
+                          }
+                        })
+                        .catch((error) => {
+                          console.error("Failed to fetch price on select:", error)
+                          setValueInEur("")
+                        })
+                        .finally(() => setLoadingPrice(false))
+                    }
+                  }}
                 />
-              </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="name">Name (auto-filled)</Label>
+                  <Input
+                    id="name"
+                    value={name}
+                    disabled
+                    className="bg-muted"
+                    placeholder="Will be auto-filled from search"
+                  />
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="grid gap-2">
+                  <Label htmlFor="name">Name</Label>
+                  <Input
+                    id="name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder={vaultType === "investment" ? "e.g., Apple Inc." : "e.g., Savings Account"}
+                    required
+                  />
+                </div>
+                {vaultType === "investment" && (
+                  <div className="grid gap-2">
+                    <Label htmlFor="symbol">Symbol (optional)</Label>
+                    <Input
+                      id="symbol"
+                      value={symbol}
+                      onChange={(e) => setSymbol(e.target.value.toUpperCase())}
+                      placeholder="e.g., AAPL, TSLA"
+                    />
+                  </div>
+                )}
+              </>
             )}
             {vaultType === "cash" && (
               <div className="grid gap-2">
@@ -151,7 +227,7 @@ export function AddAssetDialog({ vaultId, vaultType }: AddAssetDialogProps) {
               <Label htmlFor="valueInEur">
                 Value in €
                 {vaultType === "crypto" && loadingPrice && (
-                  <span className="ml-2 text-xs text-muted-foreground">(Loading price...)</span>
+                  <span className="ml-2 text-xs text-muted-foreground">(Calculating...)</span>
                 )}
               </Label>
               <Input
@@ -160,13 +236,14 @@ export function AddAssetDialog({ vaultId, vaultType }: AddAssetDialogProps) {
                 step="any"
                 value={valueInEur}
                 onChange={(e) => setValueInEur(e.target.value)}
-                placeholder={vaultType === "crypto" ? "Auto-calculated from price" : "0.00"}
+                placeholder={vaultType === "crypto" ? "Auto-calculated" : "0.00"}
                 required
-                disabled={vaultType === "crypto" && loadingPrice}
+                disabled={vaultType === "crypto"}
+                className={vaultType === "crypto" ? "bg-muted" : ""}
               />
-              {vaultType === "crypto" && symbol && (
+              {vaultType === "crypto" && (
                 <p className="text-xs text-muted-foreground">
-                  Enter symbol (e.g., BTC) and amount to auto-calculate value
+                  Value is automatically calculated from current market price
                 </p>
               )}
             </div>

@@ -5,54 +5,18 @@ import { Button } from "@/components/ui/button"
 import { RefreshCw } from "lucide-react"
 import { Asset } from "@/types/vault"
 
-// Map common crypto symbols to CoinGecko IDs (client-side version)
-const SYMBOL_TO_ID: Record<string, string> = {
-  BTC: "bitcoin",
-  ETH: "ethereum",
-  BNB: "binancecoin",
-  SOL: "solana",
-  ADA: "cardano",
-  XRP: "ripple",
-  DOT: "polkadot",
-  DOGE: "dogecoin",
-  MATIC: "matic-network",
-  AVAX: "avalanche-2",
-  ATOM: "cosmos",
-  LTC: "litecoin",
-  UNI: "uniswap",
-  LINK: "chainlink",
-  ALGO: "algorand",
-  VET: "vechain",
-  THETA: "theta-token",
-  FIL: "filecoin",
-  TRX: "tron",
-  ETC: "ethereum-classic",
-  XLM: "stellar",
-  XMR: "monero",
-  AAVE: "aave",
-  MKR: "maker",
-  COMP: "compound-governance-token",
-  YFI: "yearn-finance",
-  SNX: "havven",
-  SUSHI: "sushi",
-  CRV: "curve-dao-token",
-}
-
+// Extract symbol from asset name
 function getSymbolFromAssetName(name: string): string | null {
-  const upperName = name.toUpperCase()
-
-  // Check if name contains a known symbol
-  for (const symbol of Object.keys(SYMBOL_TO_ID)) {
-    if (upperName.includes(symbol)) {
-      return symbol
-    }
-  }
-
-  // Check if the name itself is a known symbol
-  if (SYMBOL_TO_ID[upperName]) {
+  // Try to extract symbol from name like "Bitcoin (BTC)" or "BTC"
+  const match = name.match(/\(([A-Z0-9]+)\)/i)
+  if (match) return match[1].toUpperCase()
+  
+  // Check if name itself is a symbol (2-10 uppercase alphanumeric)
+  const upperName = name.toUpperCase().trim()
+  if (/^[A-Z0-9]{2,10}$/.test(upperName)) {
     return upperName
   }
-
+  
   return null
 }
 
