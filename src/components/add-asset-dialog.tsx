@@ -27,6 +27,7 @@ export function AddAssetDialog({ vaultId, vaultType }: AddAssetDialogProps) {
   const [valueInEur, setValueInEur] = useState("")
   const [symbol, setSymbol] = useState("")
   const [currency, setCurrency] = useState("EUR")
+  const [loadingPrice, setLoadingPrice] = useState(false)
 
   useEffect(() => {
     const handleOpen = (e: CustomEvent) => {
@@ -37,6 +38,33 @@ export function AddAssetDialog({ vaultId, vaultType }: AddAssetDialogProps) {
     window.addEventListener("open-asset-dialog", handleOpen as EventListener)
     return () => window.removeEventListener("open-asset-dialog", handleOpen as EventListener)
   }, [vaultId])
+
+  // Auto-fetch price for crypto when symbol and amount are entered
+  useEffect(() => {
+    if (vaultType === "crypto" && symbol && amount) {
+      const fetchPrice = async () => {
+        setLoadingPrice(true)
+        try {
+          const response = await fetch(`/api/crypto/price?symbol=${symbol.toUpperCase()}`)
+          if (response.ok) {
+            const data = await response.json()
+            if (data.price) {
+              const calculatedValue = parseFloat(amount) * data.price
+              setValueInEur(calculatedValue.toFixed(2))
+            }
+          }
+        } catch (error) {
+          console.error("Failed to fetch price:", error)
+        } finally {
+          setLoadingPrice(false)
+        }
+      }
+
+      // Debounce the API call
+      const timeoutId = setTimeout(fetchPrice, 500)
+      return () => clearTimeout(timeoutId)
+    }
+  }, [symbol, amount, vaultType])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -120,16 +148,27 @@ export function AddAssetDialog({ vaultId, vaultType }: AddAssetDialogProps) {
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="valueInEur">Value in €</Label>
+              <Label htmlFor="valueInEur">
+                Value in €
+                {vaultType === "crypto" && loadingPrice && (
+                  <span className="ml-2 text-xs text-muted-foreground">(Loading price...)</span>
+                )}
+              </Label>
               <Input
                 id="valueInEur"
                 type="number"
                 step="any"
                 value={valueInEur}
                 onChange={(e) => setValueInEur(e.target.value)}
-                placeholder="0.00"
+                placeholder={vaultType === "crypto" ? "Auto-calculated from price" : "0.00"}
                 required
+                disabled={vaultType === "crypto" && loadingPrice}
               />
+              {vaultType === "crypto" && symbol && (
+                <p className="text-xs text-muted-foreground">
+                  Enter symbol (e.g., BTC) and amount to auto-calculate value
+                </p>
+              )}
             </div>
           </div>
           <DialogFooter>

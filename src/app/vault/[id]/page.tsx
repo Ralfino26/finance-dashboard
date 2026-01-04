@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { vaultStore, assetStore } from "@/lib/store"
 import { AddAssetDialog } from "@/components/add-asset-dialog"
 import { EditAssetDialog } from "@/components/edit-asset-dialog"
+import { CryptoPriceUpdater } from "@/components/crypto-price-updater"
 import { Plus, Pencil } from "lucide-react"
 import { Vault, Asset } from "@/types/vault"
 
@@ -85,14 +86,31 @@ export default function VaultPage({ params }: { params: Promise<{ id: string }> 
           </div>
           <p className="text-muted-foreground capitalize mt-1">{vault.type} vault</p>
         </div>
-        <Button
-          onClick={() => {
-            window.dispatchEvent(new CustomEvent("open-asset-dialog", { detail: { vaultId: id } }))
-          }}
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Add Asset
-        </Button>
+        <div className="flex items-center gap-2">
+          {vault.type === "crypto" && assets.length > 0 && (
+            <CryptoPriceUpdater
+              assets={assets}
+              onPriceUpdate={async (assetId, newValue) => {
+                await assetStore.update(assetId, { valueInEur: newValue })
+                // Reload data
+                const [assetsData, totalValueData] = await Promise.all([
+                  assetStore.getByVaultId(id),
+                  assetStore.getTotalValueByVault(id),
+                ])
+                setAssets(assetsData)
+                setTotalValue(totalValueData)
+              }}
+            />
+          )}
+          <Button
+            onClick={() => {
+              window.dispatchEvent(new CustomEvent("open-asset-dialog", { detail: { vaultId: id } }))
+            }}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Add Asset
+          </Button>
+        </div>
       </div>
 
       <Card>
