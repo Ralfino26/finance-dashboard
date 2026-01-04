@@ -1,36 +1,27 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+Dashboard plan:
 
-## Getting Started
+- overview pagina met full asset counter
+- verschillende types zoals (investeringen, crypto, cash). Deze 3 als MVP. 
+- functie om verschillende “Vaults” ofzo toe te voegen met telkens type, custom naam en kleurtje. (bv. Investerings type, “Investeringen via Revolut” als naam en Blauw als kleur. , Weer type kleur naam, … )
 
-First, run the development server:
+En dan het dashboard ziet er simpel uit. 
+- Homepage = overview page
+- Navbar op linkerkant met alle Vaults met juiste kleur en naam
+- button voor nieuwe vault. 
+- elke vault pagina geeft gwn overview van alles en edit functie. 
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- Crypto vault geeft overview met alle coins (naam, hoeveelheid, waarde in €). 
+  - Edit functie per rij van munt. 
+  - Munt toevoegen functie. 
+  - Prijs berekening enzo komt later met opensource API. 
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Investering vault geeft overview met alle aandelen (naam, hoeveelheid, waarde in €). 
+  - Edit functie per rij van investering. 
+  - Aandelen toevoegen functie. 
+  - Prijs berekening enzo komt later met opensource API. 
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Cash vault geeft overview met alle cash (naam, hoeveelheid, waarde in €). 
+  - Edit functie per rij van investering. 
+  - Aandelen toevoegen functie. 
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+  
