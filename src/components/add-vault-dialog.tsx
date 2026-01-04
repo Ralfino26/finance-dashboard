@@ -75,27 +75,28 @@ export function AddVaultDialog() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent>
+      <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Add New Vault</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-xl font-semibold">Add New Vault</DialogTitle>
+          <DialogDescription className="text-sm text-muted-foreground">
             Create a new vault to organize your assets.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
-          <div className="grid gap-4 py-4">
+          <div className="grid gap-5 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="name">Name</Label>
+              <Label htmlFor="name" className="text-sm font-medium">Name</Label>
               <Input
                 id="name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g., Investeringen via Revolut"
                 required
+                className="text-base"
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="type">Type</Label>
+              <Label htmlFor="type" className="text-sm font-medium">Type</Label>
               <Select value={type} onValueChange={(value) => setType(value as VaultType)}>
                 <SelectTrigger id="type" className="w-full">
                   <SelectValue placeholder="Select vault type" />
@@ -110,20 +111,20 @@ export function AddVaultDialog() {
               </Select>
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="color">Color</Label>
-              <div className="flex items-center gap-2">
+              <Label htmlFor="color" className="text-sm font-medium">Color</Label>
+              <div className="flex items-center gap-3">
                 <input
                   type="color"
                   id="color"
                   value={color}
                   onChange={(e) => setColor(e.target.value)}
-                  className="h-10 w-20 rounded-md border border-input cursor-pointer"
+                  className="h-11 w-20 rounded-md border border-input cursor-pointer"
                 />
                 <Input
                   value={color}
                   onChange={(e) => setColor(e.target.value)}
                   placeholder="#000000"
-                  className="flex-1"
+                  className="flex-1 text-base"
                 />
               </div>
             </div>

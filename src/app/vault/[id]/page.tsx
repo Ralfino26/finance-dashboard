@@ -113,13 +113,13 @@ export default function VaultPage({ params }: { params: Promise<{ id: string }> 
         </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Total Value</CardTitle>
-          <CardDescription>Combined value of all assets in this vault</CardDescription>
+      <Card className="border-border/50 shadow-sm">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg font-semibold">Total Value</CardTitle>
+          <CardDescription className="text-sm">Combined value of all assets in this vault</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="text-4xl font-bold">
+          <div className="text-4xl font-bold tracking-tight">
             €{totalValue.toLocaleString("nl-NL", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
         </CardContent>
@@ -136,18 +136,18 @@ export default function VaultPage({ params }: { params: Promise<{ id: string }> 
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-3">
             {assets.map((asset) => (
-              <Card key={asset.id}>
+              <Card key={asset.id} className="border-border/50 shadow-sm hover:shadow-md transition-shadow">
                 <CardContent className="pt-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3">
-                        <h3 className="font-semibold text-lg">{asset.name}</h3>
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-3 mb-3">
+                        <h3 className="font-semibold text-lg truncate">{asset.name}</h3>
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8"
+                          className="h-8 w-8 shrink-0"
                           onClick={() => {
                             window.dispatchEvent(new CustomEvent("open-edit-asset-dialog", { detail: { asset } }))
                           }}
@@ -155,16 +155,16 @@ export default function VaultPage({ params }: { params: Promise<{ id: string }> 
                           <Pencil className="h-4 w-4" />
                         </Button>
                       </div>
-                      <div className="mt-2 grid grid-cols-2 gap-4 text-sm">
+                      <div className="grid grid-cols-2 gap-4 text-sm">
                         <div>
-                          <span className="text-muted-foreground">Amount: </span>
-                          <span className="font-medium">{asset.amount}</span>
+                          <span className="text-muted-foreground text-xs">Amount</span>
+                          <p className="font-medium text-base mt-0.5">{asset.amount.toLocaleString("nl-NL")}</p>
                         </div>
                         <div>
-                          <span className="text-muted-foreground">Value: </span>
-                          <span className="font-medium">
+                          <span className="text-muted-foreground text-xs">Value</span>
+                          <p className="font-medium text-base mt-0.5">
                             €{asset.valueInEur.toLocaleString("nl-NL", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          </span>
+                          </p>
                         </div>
                       </div>
                     </div>

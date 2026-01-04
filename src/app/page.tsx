@@ -75,16 +75,16 @@ export default function OverviewPage() {
         </p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+      <Card className="border-border/50 shadow-sm">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-lg font-semibold">
             <Wallet className="h-5 w-5" />
             Total Assets
           </CardTitle>
-          <CardDescription>Combined value of all vaults</CardDescription>
+          <CardDescription className="text-sm">Combined value of all vaults</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="text-4xl font-bold">
+          <div className="text-4xl font-bold tracking-tight">
             €{totalValue.toLocaleString("nl-NL", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
         </CardContent>
@@ -109,28 +109,28 @@ export default function OverviewPage() {
         ) : (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {vaultSummaries.map(({ vault, totalValue, assetCount }) => (
-              <Card key={vault.id} className="hover:shadow-md transition-shadow">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
+              <Card key={vault.id} className="hover:shadow-md transition-shadow border-border/50 cursor-pointer" onClick={() => window.location.href = `/vault/${vault.id}`}>
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-base font-semibold">
                     <div
-                      className="h-4 w-4 rounded-full"
+                      className="h-4 w-4 rounded-full shrink-0"
                       style={{ backgroundColor: vault.color }}
                     />
-                    {vault.name}
+                    <span className="truncate">{vault.name}</span>
                   </CardTitle>
-                  <CardDescription className="capitalize">{vault.type}</CardDescription>
+                  <CardDescription className="capitalize text-xs">{vault.type} vault</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">Total Value</span>
-                      <span className="text-lg font-semibold">
+                  <div className="space-y-3">
+                    <div>
+                      <span className="text-xs text-muted-foreground">Total Value</span>
+                      <p className="text-xl font-semibold mt-0.5">
                         €{totalValue.toLocaleString("nl-NL", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </span>
+                      </p>
                     </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">Assets</span>
-                      <span className="text-sm font-medium">{assetCount}</span>
+                    <div>
+                      <span className="text-xs text-muted-foreground">Assets</span>
+                      <p className="text-sm font-medium mt-0.5">{assetCount}</p>
                     </div>
                   </div>
                 </CardContent>

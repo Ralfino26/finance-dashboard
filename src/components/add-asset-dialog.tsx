@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label"
 import { assetStore } from "@/lib/store"
 import { VaultType } from "@/types/vault"
 import { CryptoSearch } from "@/components/crypto-search"
+import { cn } from "@/lib/utils"
 
 interface AddAssetDialogProps {
   vaultId: string
@@ -118,15 +119,15 @@ export function AddAssetDialog({ vaultId, vaultType }: AddAssetDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent>
+      <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Add Asset</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-xl font-semibold">Add Asset</DialogTitle>
+          <DialogDescription className="text-sm text-muted-foreground">
             Add a new asset to this {vaultType} vault.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
-          <div className="grid gap-4 py-4">
+          <div className="grid gap-5 py-4">
             {vaultType === "crypto" ? (
               <>
                 <CryptoSearch
@@ -165,12 +166,14 @@ export function AddAssetDialog({ vaultId, vaultType }: AddAssetDialogProps) {
                   }}
                 />
                 <div className="grid gap-2">
-                  <Label htmlFor="name">Name (auto-filled)</Label>
+                  <Label htmlFor="name" className="text-sm font-medium">
+                    Name <span className="text-muted-foreground font-normal">(auto-filled)</span>
+                  </Label>
                   <Input
                     id="name"
                     value={name}
                     disabled
-                    className="bg-muted"
+                    className="bg-muted/50 cursor-not-allowed"
                     placeholder="Will be auto-filled from search"
                   />
                 </div>
@@ -212,7 +215,7 @@ export function AddAssetDialog({ vaultId, vaultType }: AddAssetDialogProps) {
               </div>
             )}
             <div className="grid gap-2">
-              <Label htmlFor="amount">Amount</Label>
+              <Label htmlFor="amount" className="text-sm font-medium">Amount</Label>
               <Input
                 id="amount"
                 type="number"
@@ -221,15 +224,21 @@ export function AddAssetDialog({ vaultId, vaultType }: AddAssetDialogProps) {
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="0.00"
                 required
+                className="text-base"
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="valueInEur">
-                Value in €
+              <div className="flex items-center justify-between">
+                <Label htmlFor="valueInEur" className="text-sm font-medium">
+                  Value in €
+                </Label>
                 {vaultType === "crypto" && loadingPrice && (
-                  <span className="ml-2 text-xs text-muted-foreground">(Calculating...)</span>
+                  <span className="text-xs text-muted-foreground flex items-center gap-1">
+                    <div className="h-3 w-3 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                    Calculating...
+                  </span>
                 )}
-              </Label>
+              </div>
               <Input
                 id="valueInEur"
                 type="number"
@@ -239,10 +248,13 @@ export function AddAssetDialog({ vaultId, vaultType }: AddAssetDialogProps) {
                 placeholder={vaultType === "crypto" ? "Auto-calculated" : "0.00"}
                 required
                 disabled={vaultType === "crypto"}
-                className={vaultType === "crypto" ? "bg-muted" : ""}
+                className={cn(
+                  "text-base",
+                  vaultType === "crypto" && "bg-muted/50 cursor-not-allowed"
+                )}
               />
-              {vaultType === "crypto" && (
-                <p className="text-xs text-muted-foreground">
+              {vaultType === "crypto" && !loadingPrice && (
+                <p className="text-xs text-muted-foreground mt-1">
                   Value is automatically calculated from current market price
                 </p>
               )}

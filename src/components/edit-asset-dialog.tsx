@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label"
 import { assetStore } from "@/lib/store"
 import { Asset, VaultType } from "@/types/vault"
 import { CryptoSearch } from "@/components/crypto-search"
+import { cn } from "@/lib/utils"
 
 interface EditAssetDialogProps {
   vaultType: VaultType
@@ -179,15 +180,15 @@ export function EditAssetDialog({ vaultType }: EditAssetDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent>
+      <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Edit Asset</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-xl font-semibold">Edit Asset</DialogTitle>
+          <DialogDescription className="text-sm text-muted-foreground">
             Update the asset details.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
-          <div className="grid gap-4 py-4">
+          <div className="grid gap-5 py-4">
             {vaultType === "crypto" ? (
               <>
                 <CryptoSearch
@@ -218,29 +219,32 @@ export function EditAssetDialog({ vaultType }: EditAssetDialogProps) {
                   }}
                 />
                 <div className="grid gap-2">
-                  <Label htmlFor="edit-name">Name (auto-filled)</Label>
+                  <Label htmlFor="edit-name" className="text-sm font-medium">
+                    Name <span className="text-muted-foreground font-normal">(auto-filled)</span>
+                  </Label>
                   <Input
                     id="edit-name"
                     value={name}
                     disabled
-                    className="bg-muted"
+                    className="bg-muted/50 cursor-not-allowed"
                     placeholder="Will be auto-filled from search"
                   />
                 </div>
               </>
             ) : (
               <div className="grid gap-2">
-                <Label htmlFor="edit-name">Name</Label>
+                <Label htmlFor="edit-name" className="text-sm font-medium">Name</Label>
                 <Input
                   id="edit-name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   required
+                  className="text-base"
                 />
               </div>
             )}
             <div className="grid gap-2">
-              <Label htmlFor="edit-amount">Amount</Label>
+              <Label htmlFor="edit-amount" className="text-sm font-medium">Amount</Label>
               <Input
                 id="edit-amount"
                 type="number"
@@ -248,15 +252,21 @@ export function EditAssetDialog({ vaultType }: EditAssetDialogProps) {
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 required
+                className="text-base"
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="edit-valueInEur">
-                Value in €
+              <div className="flex items-center justify-between">
+                <Label htmlFor="edit-valueInEur" className="text-sm font-medium">
+                  Value in €
+                </Label>
                 {vaultType === "crypto" && loadingPrice && (
-                  <span className="ml-2 text-xs text-muted-foreground">(Calculating...)</span>
+                  <span className="text-xs text-muted-foreground flex items-center gap-1">
+                    <div className="h-3 w-3 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                    Calculating...
+                  </span>
                 )}
-              </Label>
+              </div>
               <Input
                 id="edit-valueInEur"
                 type="number"
@@ -266,10 +276,13 @@ export function EditAssetDialog({ vaultType }: EditAssetDialogProps) {
                 placeholder={vaultType === "crypto" ? "Auto-calculated" : "0.00"}
                 required
                 disabled={vaultType === "crypto"}
-                className={vaultType === "crypto" ? "bg-muted" : ""}
+                className={cn(
+                  "text-base",
+                  vaultType === "crypto" && "bg-muted/50 cursor-not-allowed"
+                )}
               />
-              {vaultType === "crypto" && (
-                <p className="text-xs text-muted-foreground">
+              {vaultType === "crypto" && !loadingPrice && (
+                <p className="text-xs text-muted-foreground mt-1">
                   Value is automatically calculated from current market price
                 </p>
               )}
