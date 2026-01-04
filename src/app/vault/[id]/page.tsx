@@ -1,23 +1,72 @@
 "use client"
 
-import { use } from "react"
-import { notFound } from "next/navigation"
+import { use, useState, useEffect } from "react"
+import { notFound, useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { vaultStore, assetStore } from "@/lib/store"
 import { AddAssetDialog } from "@/components/add-asset-dialog"
 import { EditAssetDialog } from "@/components/edit-asset-dialog"
 import { Plus, Pencil } from "lucide-react"
-import Link from "next/link"
+import { Vault, Asset } from "@/types/vault"
 
 export default function VaultPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
-  const vault = vaultStore.getById(id)
-  const assets = assetStore.getByVaultId(id)
-  const totalValue = assetStore.getTotalValueByVault(id)
+  const router = useRouter()
+  const [vault, setVault] = useState<Vault | null>(null)
+  const [assets, setAssets] = useState<Asset[]>([])
+  const [totalValue, setTotalValue] = useState(0)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [vaultData, assetsData, totalValueData] = await Promise.all([
+          vaultStore.getById(id),
+          assetStore.getByVaultId(id),
+          assetStore.getTotalValueByVault(id),
+        ])
+
+        if (!vaultData) {
+          notFound()
+          return
+        }
+
+        setVault(vaultData)
+        setAssets(assetsData)
+        setTotalValue(totalValueData)
+      } catch (error) {
+        console.error("Failed to load vault data:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadData()
+
+    // Reload when assets are updated
+    const handleUpdate = () => {
+      loadData()
+    }
+    window.addEventListener("asset-updated", handleUpdate)
+    return () => window.removeEventListener("asset-updated", handleUpdate)
+  }, [id])
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardContent className="pt-6">
+            <p className="text-center text-muted-foreground">Loading...</p>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
 
   if (!vault) {
     notFound()
+    return null
   }
 
   return (

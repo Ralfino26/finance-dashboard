@@ -38,24 +38,30 @@ export function AddAssetDialog({ vaultId, vaultType }: AddAssetDialogProps) {
     return () => window.removeEventListener("open-asset-dialog", handleOpen as EventListener)
   }, [vaultId])
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!name.trim() || !amount || !valueInEur) return
 
-    assetStore.create({
-      vaultId,
-      name: name.trim(),
-      amount: parseFloat(amount),
-      valueInEur: parseFloat(valueInEur),
-    })
+    try {
+      await assetStore.create({
+        vaultId,
+        name: name.trim(),
+        amount: parseFloat(amount),
+        valueInEur: parseFloat(valueInEur),
+      })
 
-    setName("")
-    setAmount("")
-    setValueInEur("")
-    setSymbol("")
-    setCurrency("EUR")
-    setOpen(false)
-    window.location.reload() // Simple refresh for MVP
+      setName("")
+      setAmount("")
+      setValueInEur("")
+      setSymbol("")
+      setCurrency("EUR")
+      setOpen(false)
+      // Dispatch event to update components
+      window.dispatchEvent(new CustomEvent("asset-updated"))
+    } catch (error) {
+      console.error("Failed to create asset:", error)
+      alert("Failed to create asset. Please try again.")
+    }
   }
 
   return (

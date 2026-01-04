@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { Home, Plus } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -19,7 +20,29 @@ import { Vault } from "@/types/vault"
 
 export function AppSidebar() {
   const pathname = usePathname()
-  const vaults = vaultStore.getAll()
+  const [vaults, setVaults] = useState<Vault[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const loadVaults = async () => {
+      try {
+        const data = await vaultStore.getAll()
+        setVaults(data)
+      } catch (error) {
+        console.error("Failed to load vaults:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadVaults()
+
+    // Reload vaults when a custom event is dispatched (after creating a vault)
+    const handleVaultUpdate = () => {
+      loadVaults()
+    }
+    window.addEventListener("vault-updated", handleVaultUpdate)
+    return () => window.removeEventListener("vault-updated", handleVaultUpdate)
+  }, [])
 
   return (
     <Sidebar>
@@ -57,15 +80,25 @@ export function AppSidebar() {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {vaults.map((vault) => (
-                <VaultMenuItem key={vault.id} vault={vault} pathname={pathname} />
-              ))}
-              {vaults.length === 0 && (
+              {loading ? (
                 <SidebarMenuItem>
                   <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                    No vaults yet. Click + to add one.
+                    Loading...
                   </div>
                 </SidebarMenuItem>
+              ) : (
+                <>
+                  {vaults.map((vault) => (
+                    <VaultMenuItem key={vault.id} vault={vault} pathname={pathname} />
+                  ))}
+                  {vaults.length === 0 && (
+                    <SidebarMenuItem>
+                      <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                        No vaults yet. Click + to add one.
+                      </div>
+                    </SidebarMenuItem>
+                  )}
+                </>
               )}
             </SidebarMenu>
           </SidebarGroupContent>

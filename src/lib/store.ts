@@ -1,79 +1,158 @@
-import { Vault, Asset, VaultType } from "@/types/vault";
+import { Vault, Asset, VaultType } from "@/types/vault"
 
-// Simple in-memory store for MVP - replace with proper state management later
-let vaults: Vault[] = [];
-let assets: Asset[] = [];
-
+// Client-side store that uses API routes
 export const vaultStore = {
-  getAll: (): Vault[] => vaults,
-  
-  getById: (id: string): Vault | undefined => vaults.find(v => v.id === id),
-  
-  create: (vault: Omit<Vault, "id" | "createdAt">): Vault => {
-    const newVault: Vault = {
-      ...vault,
-      id: crypto.randomUUID(),
-      createdAt: new Date(),
-    };
-    vaults.push(newVault);
-    return newVault;
+  getAll: async (): Promise<Vault[]> => {
+    const response = await fetch("/api/vaults")
+    if (!response.ok) {
+      throw new Error("Failed to fetch vaults")
+    }
+    return response.json()
   },
-  
-  update: (id: string, updates: Partial<Omit<Vault, "id" | "createdAt">>): Vault | null => {
-    const index = vaults.findIndex(v => v.id === id);
-    if (index === -1) return null;
-    vaults[index] = { ...vaults[index], ...updates };
-    return vaults[index];
+
+  getById: async (id: string): Promise<Vault | undefined> => {
+    const response = await fetch(`/api/vaults/${id}`)
+    if (response.status === 404) {
+      return undefined
+    }
+    if (!response.ok) {
+      throw new Error("Failed to fetch vault")
+    }
+    return response.json()
   },
-  
-  delete: (id: string): boolean => {
-    const index = vaults.findIndex(v => v.id === id);
-    if (index === -1) return false;
-    vaults.splice(index, 1);
-    // Also delete all assets in this vault
-    assets = assets.filter(a => a.vaultId !== id);
-    return true;
+
+  create: async (
+    vault: Omit<Vault, "id" | "createdAt">
+  ): Promise<Vault> => {
+    const response = await fetch("/api/vaults", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(vault),
+    })
+    if (!response.ok) {
+      throw new Error("Failed to create vault")
+    }
+    return response.json()
   },
-};
+
+  update: async (
+    id: string,
+    updates: Partial<Omit<Vault, "id" | "createdAt">>
+  ): Promise<Vault | null> => {
+    const response = await fetch(`/api/vaults/${id}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(updates),
+    })
+    if (response.status === 404) {
+      return null
+    }
+    if (!response.ok) {
+      throw new Error("Failed to update vault")
+    }
+    return response.json()
+  },
+
+  delete: async (id: string): Promise<boolean> => {
+    const response = await fetch(`/api/vaults/${id}`, {
+      method: "DELETE",
+    })
+    if (response.status === 404) {
+      return false
+    }
+    if (!response.ok) {
+      throw new Error("Failed to delete vault")
+    }
+    return true
+  },
+}
 
 export const assetStore = {
-  getByVaultId: (vaultId: string): Asset[] => 
-    assets.filter(a => a.vaultId === vaultId),
-  
-  getById: (id: string): Asset | undefined => assets.find(a => a.id === id),
-  
-  create: (asset: Omit<Asset, "id" | "updatedAt">): Asset => {
-    const newAsset: Asset = {
-      ...asset,
-      id: crypto.randomUUID(),
-      updatedAt: new Date(),
-    };
-    assets.push(newAsset);
-    return newAsset;
+  getByVaultId: async (vaultId: string): Promise<Asset[]> => {
+    const response = await fetch(`/api/assets?vaultId=${vaultId}`)
+    if (!response.ok) {
+      throw new Error("Failed to fetch assets")
+    }
+    return response.json()
   },
-  
-  update: (id: string, updates: Partial<Omit<Asset, "id" | "updatedAt">>): Asset | null => {
-    const index = assets.findIndex(a => a.id === id);
-    if (index === -1) return null;
-    assets[index] = { ...assets[index], ...updates, updatedAt: new Date() };
-    return assets[index];
-  },
-  
-  delete: (id: string): boolean => {
-    const index = assets.findIndex(a => a.id === id);
-    if (index === -1) return false;
-    assets.splice(index, 1);
-    return true;
-  },
-  
-  getTotalValue: (): number => {
-    return assets.reduce((sum, asset) => sum + asset.valueInEur, 0);
-  },
-  
-  getTotalValueByVault: (vaultId: string): number => {
-    return assets
-      .filter(a => a.vaultId === vaultId)
-      .reduce((sum, asset) => sum + asset.valueInEur, 0);
-  },
-};
 
+  getAll: async (): Promise<Asset[]> => {
+    const response = await fetch("/api/assets")
+    if (!response.ok) {
+      throw new Error("Failed to fetch assets")
+    }
+    return response.json()
+  },
+
+  getById: async (id: string): Promise<Asset | undefined> => {
+    const response = await fetch(`/api/assets/${id}`)
+    if (response.status === 404) {
+      return undefined
+    }
+    if (!response.ok) {
+      throw new Error("Failed to fetch asset")
+    }
+    return response.json()
+  },
+
+  create: async (asset: Omit<Asset, "id" | "updatedAt">): Promise<Asset> => {
+    const response = await fetch("/api/assets", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(asset),
+    })
+    if (!response.ok) {
+      throw new Error("Failed to create asset")
+    }
+    return response.json()
+  },
+
+  update: async (
+    id: string,
+    updates: Partial<Omit<Asset, "id" | "updatedAt">>
+  ): Promise<Asset | null> => {
+    const response = await fetch(`/api/assets/${id}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(updates),
+    })
+    if (response.status === 404) {
+      return null
+    }
+    if (!response.ok) {
+      throw new Error("Failed to update asset")
+    }
+    return response.json()
+  },
+
+  delete: async (id: string): Promise<boolean> => {
+    const response = await fetch(`/api/assets/${id}`, {
+      method: "DELETE",
+    })
+    if (response.status === 404) {
+      return false
+    }
+    if (!response.ok) {
+      throw new Error("Failed to delete asset")
+    }
+    return true
+  },
+
+  getTotalValue: async (): Promise<number> => {
+    const assets = await assetStore.getAll()
+    return assets.reduce((sum, asset) => sum + asset.valueInEur, 0)
+  },
+
+  getTotalValueByVault: async (vaultId: string): Promise<number> => {
+    const assets = await assetStore.getByVaultId(vaultId)
+    return assets.reduce((sum, asset) => sum + asset.valueInEur, 0)
+  },
+}

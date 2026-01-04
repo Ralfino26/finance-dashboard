@@ -41,31 +41,43 @@ export function EditAssetDialog({ vaultType }: EditAssetDialogProps) {
     return () => window.removeEventListener("open-edit-asset-dialog", handleOpen as EventListener)
   }, [])
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!asset || !name.trim() || !amount || !valueInEur) return
 
-    assetStore.update(asset.id, {
-      name: name.trim(),
-      amount: parseFloat(amount),
-      valueInEur: parseFloat(valueInEur),
-    })
+    try {
+      await assetStore.update(asset.id, {
+        name: name.trim(),
+        amount: parseFloat(amount),
+        valueInEur: parseFloat(valueInEur),
+      })
 
-    setAsset(null)
-    setName("")
-    setAmount("")
-    setValueInEur("")
-    setOpen(false)
-    window.location.reload() // Simple refresh for MVP
+      setAsset(null)
+      setName("")
+      setAmount("")
+      setValueInEur("")
+      setOpen(false)
+      // Dispatch event to update components
+      window.dispatchEvent(new CustomEvent("asset-updated"))
+    } catch (error) {
+      console.error("Failed to update asset:", error)
+      alert("Failed to update asset. Please try again.")
+    }
   }
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!asset) return
     if (confirm("Are you sure you want to delete this asset?")) {
-      assetStore.delete(asset.id)
-      setAsset(null)
-      setOpen(false)
-      window.location.reload() // Simple refresh for MVP
+      try {
+        await assetStore.delete(asset.id)
+        setAsset(null)
+        setOpen(false)
+        // Dispatch event to update components
+        window.dispatchEvent(new CustomEvent("asset-updated"))
+      } catch (error) {
+        console.error("Failed to delete asset:", error)
+        alert("Failed to delete asset. Please try again.")
+      }
     }
   }
 

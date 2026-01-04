@@ -43,21 +43,27 @@ export function AddVaultDialog() {
     setColor(DEFAULT_COLORS[type])
   }, [type])
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!name.trim()) return
 
-    vaultStore.create({
-      name: name.trim(),
-      type,
-      color,
-    })
+    try {
+      await vaultStore.create({
+        name: name.trim(),
+        type,
+        color,
+      })
 
-    setName("")
-    setType("crypto")
-    setColor(DEFAULT_COLORS.crypto)
-    setOpen(false)
-    window.location.reload() // Simple refresh for MVP
+      setName("")
+      setType("crypto")
+      setColor(DEFAULT_COLORS.crypto)
+      setOpen(false)
+      // Dispatch event to update sidebar and other components
+      window.dispatchEvent(new CustomEvent("vault-updated"))
+    } catch (error) {
+      console.error("Failed to create vault:", error)
+      alert("Failed to create vault. Please try again.")
+    }
   }
 
   return (

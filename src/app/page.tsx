@@ -1,18 +1,70 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { assetStore, vaultStore } from "@/lib/store"
 import { Wallet } from "lucide-react"
+import { Vault } from "@/types/vault"
+
+interface VaultSummary {
+  vault: Vault
+  totalValue: number
+  assetCount: number
+}
 
 export default function OverviewPage() {
-  const vaults = vaultStore.getAll()
-  const totalValue = assetStore.getTotalValue()
+  const [vaults, setVaults] = useState<Vault[]>([])
+  const [totalValue, setTotalValue] = useState(0)
+  const [vaultSummaries, setVaultSummaries] = useState<VaultSummary[]>([])
+  const [loading, setLoading] = useState(true)
 
-  const vaultSummaries = vaults.map((vault) => ({
-    vault,
-    totalValue: assetStore.getTotalValueByVault(vault.id),
-    assetCount: assetStore.getByVaultId(vault.id).length,
-  }))
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [vaultsData, totalValueData] = await Promise.all([
+          vaultStore.getAll(),
+          assetStore.getTotalValue(),
+        ])
+
+        setVaults(vaultsData)
+        setTotalValue(totalValueData)
+
+        // Load summaries for each vault
+        const summaries = await Promise.all(
+          vaultsData.map(async (vault) => {
+            const [assets, total] = await Promise.all([
+              assetStore.getByVaultId(vault.id),
+              assetStore.getTotalValueByVault(vault.id),
+            ])
+            return {
+              vault,
+              totalValue: total,
+              assetCount: assets.length,
+            }
+          })
+        )
+
+        setVaultSummaries(summaries)
+      } catch (error) {
+        console.error("Failed to load data:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadData()
+
+    // Reload when vaults are updated
+    const handleUpdate = () => {
+      loadData()
+    }
+    window.addEventListener("vault-updated", handleUpdate)
+    window.addEventListener("asset-updated", handleUpdate)
+    return () => {
+      window.removeEventListener("vault-updated", handleUpdate)
+      window.removeEventListener("asset-updated", handleUpdate)
+    }
+  }, [])
 
   return (
     <div className="space-y-6">
@@ -40,7 +92,13 @@ export default function OverviewPage() {
 
       <div>
         <h2 className="text-2xl font-semibold tracking-tight mb-4">Vaults</h2>
-        {vaultSummaries.length === 0 ? (
+        {loading ? (
+          <Card>
+            <CardContent className="pt-6">
+              <p className="text-center text-muted-foreground">Loading...</p>
+            </CardContent>
+          </Card>
+        ) : vaultSummaries.length === 0 ? (
           <Card>
             <CardContent className="pt-6">
               <p className="text-center text-muted-foreground">
