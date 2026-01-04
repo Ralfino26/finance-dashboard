@@ -1,0 +1,131 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { assetStore } from "@/lib/store"
+import { Asset, VaultType } from "@/types/vault"
+
+interface EditAssetDialogProps {
+  vaultType: VaultType
+}
+
+export function EditAssetDialog({ vaultType }: EditAssetDialogProps) {
+  const [open, setOpen] = useState(false)
+  const [asset, setAsset] = useState<Asset | null>(null)
+  const [name, setName] = useState("")
+  const [amount, setAmount] = useState("")
+  const [valueInEur, setValueInEur] = useState("")
+
+  useEffect(() => {
+    const handleOpen = (e: CustomEvent) => {
+      const assetData = e.detail?.asset as Asset
+      if (assetData) {
+        setAsset(assetData)
+        setName(assetData.name)
+        setAmount(assetData.amount.toString())
+        setValueInEur(assetData.valueInEur.toString())
+        setOpen(true)
+      }
+    }
+    window.addEventListener("open-edit-asset-dialog", handleOpen as EventListener)
+    return () => window.removeEventListener("open-edit-asset-dialog", handleOpen as EventListener)
+  }, [])
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!asset || !name.trim() || !amount || !valueInEur) return
+
+    assetStore.update(asset.id, {
+      name: name.trim(),
+      amount: parseFloat(amount),
+      valueInEur: parseFloat(valueInEur),
+    })
+
+    setAsset(null)
+    setName("")
+    setAmount("")
+    setValueInEur("")
+    setOpen(false)
+    window.location.reload() // Simple refresh for MVP
+  }
+
+  const handleDelete = () => {
+    if (!asset) return
+    if (confirm("Are you sure you want to delete this asset?")) {
+      assetStore.delete(asset.id)
+      setAsset(null)
+      setOpen(false)
+      window.location.reload() // Simple refresh for MVP
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Edit Asset</DialogTitle>
+          <DialogDescription>
+            Update the asset details.
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit}>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="edit-name">Name</Label>
+              <Input
+                id="edit-name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="edit-amount">Amount</Label>
+              <Input
+                id="edit-amount"
+                type="number"
+                step="any"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                required
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="edit-valueInEur">Value in €</Label>
+              <Input
+                id="edit-valueInEur"
+                type="number"
+                step="any"
+                value={valueInEur}
+                onChange={(e) => setValueInEur(e.target.value)}
+                required
+              />
+            </div>
+          </div>
+          <DialogFooter className="flex justify-between">
+            <Button type="button" variant="destructive" onClick={handleDelete}>
+              Delete
+            </Button>
+            <div className="flex gap-2">
+              <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit">Save Changes</Button>
+            </div>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}
+

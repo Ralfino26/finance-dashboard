@@ -1,8 +1,35 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:is(.dark *));
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --sidebar: hsl(0 0% 98%);
+  --sidebar-foreground: hsl(240 5.3% 26.1%);
+  --sidebar-primary: hsl(240 5.9% 10%);
+  --sidebar-primary-foreground: hsl(0 0% 98%);
+  --sidebar-accent: hsl(240 4.8% 95.9%);
+  --sidebar-accent-foreground: hsl(240 5.9% 10%);
+  --sidebar-border: hsl(220 13% 91%);
+  --sidebar-ring: hsl(217.2 91.2% 59.8%);
+  
+  /* Finance Colors - Easy to customize */
+  --finance-primary: hsl(217 91% 60%);
+  --finance-primary-foreground: hsl(0 0% 100%);
+  --finance-secondary: hsl(210 40% 96%);
+  --finance-secondary-foreground: hsl(222 47% 11%);
+  --finance-accent: hsl(210 40% 90%);
+  --finance-accent-foreground: hsl(222 47% 11%);
+  --finance-success: hsl(142 76% 36%);
+  --finance-success-foreground: hsl(0 0% 100%);
+  --finance-warning: hsl(38 92% 50%);
+  --finance-warning-foreground: hsl(0 0% 100%);
+  --finance-error: hsl(0 84% 60%);
+  --finance-error-foreground: hsl(0 0% 100%);
+  --finance-crypto: hsl(142 76% 36%);
+  --finance-investment: hsl(217 91% 60%);
+  --finance-cash: hsl(38 92% 50%);
 }
 
 @theme inline {
@@ -10,12 +37,39 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-finance-primary: var(--finance-primary);
+  --color-finance-primary-foreground: var(--finance-primary-foreground);
+  --color-finance-secondary: var(--finance-secondary);
+  --color-finance-secondary-foreground: var(--finance-secondary-foreground);
+  --color-finance-accent: var(--finance-accent);
+  --color-finance-accent-foreground: var(--finance-accent-foreground);
+  --color-finance-success: var(--finance-success);
+  --color-finance-success-foreground: var(--finance-success-foreground);
+  --color-finance-warning: var(--finance-warning);
+  --color-finance-warning-foreground: var(--finance-warning-foreground);
+  --color-finance-error: var(--finance-error);
+  --color-finance-error-foreground: var(--finance-error-foreground);
+  --color-finance-crypto: var(--finance-crypto);
+  --color-finance-investment: var(--finance-investment);
+  --color-finance-cash: var(--finance-cash);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
+    --finance-secondary: hsl(210 40% 10%);
+    --finance-secondary-foreground: hsl(210 40% 96%);
+    --finance-accent: hsl(210 40% 15%);
+    --finance-accent-foreground: hsl(210 40% 96%);
   }
 }
 
@@ -23,4 +77,21 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+.dark {
+  --sidebar: hsl(240 5.9% 10%);
+  --sidebar-foreground: hsl(240 4.8% 95.9%);
+  --sidebar-primary: hsl(224.3 76.3% 48%);
+  --sidebar-primary-foreground: hsl(0 0% 100%);
+  --sidebar-accent: hsl(240 3.7% 15.9%);
+  --sidebar-accent-foreground: hsl(240 4.8% 95.9%);
+  --sidebar-border: hsl(240 3.7% 15.9%);
+  --sidebar-ring: hsl(217.2 91.2% 59.8%);
+}
+
+@layer base {
+  body {
+    @apply bg-background text-foreground;
+  }
 }
